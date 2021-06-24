@@ -1,4 +1,5 @@
 import asyncio
+from tempfile import TemporaryFile
 from discord import channel, member
 from discord.ext import commands
 import discord
@@ -33,14 +34,14 @@ async def channel_check(ctx):
    channel = await conver.TextChannelConverter().convert(ctx,CHANNEL)
    return channel == ctx.channel
 
-@bot.command(name='test')
-@commands.has_role('admin')
+@bot.command(name='check')
+@commands.has_role('Admin')
 async def test(ctx, check_in_time=1,sheet_id=SHEET_ID,*,tournament_name="Asguard 5v5"):
    print(ctx.channel)
    sheet_interface.SAMPLE_SPREADSHEET_ID=sheet_id
    await ctx.message.delete()
    d1 = str(datetime.datetime.now().date())
-   msg = await ctx.send(("Check ins open for {0} {1} \n"+\
+   msg = await ctx.send(("@everyone Check ins open for {0} {1} \n"+\
                         "Check ins close in {2} minutes from this message\n"+\
                         "React with ✅ to check in").format(d1,tournament_name,check_in_time))
    await msg.add_reaction("✅")
@@ -59,7 +60,10 @@ async def add(payload):
          sheet_interface.add_checkmark(row)
          await payload.member.add_roles(discord.utils.get(payload.member.guild.roles,name=ROLE))
          team_name = sheet_interface.get_team_name(row)
-         #await payload.member.edit(nick = ("["+team_name+"] "+payload.member.name))
+         try:
+            await payload.member.edit(nick = ("["+team_name+"] "+payload.member.name))
+         except:
+            pass
          channel = await bot.fetch_channel(payload.channel_id)
          msg = await channel.send("{} has checked in".format(mention_ID))
 
@@ -73,7 +77,10 @@ async def remove(payload):
          guild = await bot.fetch_guild(payload.guild_id)
          member_id = await guild.fetch_member(payload.user_id)
          await member_id.remove_roles(discord.utils.get(guild.roles,name=ROLE))
-         #await member_id.edit(nick = (member_id.name))
+         try:
+            await member_id.edit(nick = (member_id.name))
+         except:
+            pass
          channel = await bot.fetch_channel(payload.channel_id)
          tag = '<@{}>'.format(payload.user_id)
          msg = await channel.send('{} has un-check in'.format(tag))
