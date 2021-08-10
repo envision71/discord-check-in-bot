@@ -1,19 +1,32 @@
 import asyncio
+from asyncio.windows_events import NULL
+from enum import auto
 from tempfile import TemporaryFile
+from time import process_time_ns
+from weakref import ProxyTypes
 from discord import channel, member
+from discord import guild
+from discord import role
 from discord.ext import commands
+from discord_slash import SlashCommand, SlashCommandOptionType, SlashContext
 import discord
 import os
 import datetime
 from discord.guild import Guild
-
 from discord.role import Role
+from discord_slash.model import SlashCommandPermissionType
+from discord_slash.utils import manage_commands
+from discord_slash.utils.manage_commands import create_option, create_permission
+from pyasn1.type.univ import Null
 from quickstart import sheet
 from discord.ext.commands.errors import MissingRole
 from discord.raw_models import RawReactionActionEvent
 
+open_flag = False
+r1 = NULL
 conver = commands.converter
 bot = commands.Bot(command_prefix='!')
+slash = SlashCommand(bot, sync_commands=True)
 CLIENT = discord.Client()
 TOKEN = os.getenv('DISCORD_TOKEN')
 SERVER_NAME= os.getenv('DISCORD_SERVER_NAME')
@@ -22,13 +35,79 @@ ROLE = os.getenv('ROLE_TO_GIVE')
 POST_CHANNEL = os.getenv('POST_TO_CHANNEL')
 SHEET_ID = os.getenv('SHEET_ID')
 SHEET_NAME = os.getenv('SHEET_NAME')
-SEARCH_COLUMN = os.getenv('COLUMN_TO_SEARCH_THROUGH')
-UPDATE_COLUMN = os.getenv('COLUMN_TO_UPDATE')
-TEAM_NAME_COLUMN = os.getenv('TEAM_NAME_COLUMN')
+SEARCH_COLUMN = os.getenv('TEAM_CAPTAIN_COLUMN_NAME')
+UPDATE_COLUMN = os.getenv('CHECK_IN_COLUMN_NAME')
+TEAM_NAME_COLUMN = os.getenv('TEAM_NAME_COLUMN_NAME')
 TRACKID = []
 sheet_interface = sheet(SHEET_ID,SHEET_NAME,SEARCH_COLUMN,UPDATE_COLUMN,TEAM_NAME_COLUMN)
+options = [
+            manage_commands.create_option(name = "role",description = "Role to assign",
+                                          option_type = 8, required = "false"),
+            manage_commands.create_option(name = "duration",description = "Minutes to leave check in open for.",
+                                          option_type = 4, required = "false"),
+            manage_commands.create_option(name = "sheet_id",description = "Google sheets ID to search for check-ins.",
+                                          option_type = 3, required = "false"),
+            manage_commands.create_option(name = "tournament_name",description = "Name of tournament",
+                                          option_type = 3, required = "false")
+]
 
+def nick_shortener(team_name,discord_name):
+   nick = "["+team_name+"] "+discord_name
+   if(len(nick)>32):
+      nick = nick[:32]
+   
+   return nick
 
+@slash.permission(guild_id=835322775098490949,permissions=[create_permission(853752814944518205, SlashCommandPermissionType.ROLE, True)])
+@slash.slash(name= 'start_check', description="Start check-ins for a tournament", guild_ids = [835322775098490949], options=options)
+async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_name="Asgard 5v5",role=ROLE):
+   global r1
+   global open_flag
+   r1 = role
+   sheet_interface.SAMPLE_SPREADSHEET_ID=sheet_id
+   d1 = str(datetime.datetime.now().date())
+   open_flag = True
+   msg = await ctx.send(("@everyone Check ins open for {0} {1} \n"+\
+                        "Check ins close in {2} minutes from this message\n"+\
+                        "Use /check to check-in").format(d1,tournament_name,duration))
+   await asyncio.sleep(duration*60)
+   msg = await ctx.send("{0} {1} check ins closed".format(d1,tournament_name))
+   open_flag = False
+
+@slash.slash(name="test",
+             description="This is just a test command, nothing more.")
+async def test(ctx):
+  await ctx.send(content="Hello World!")
+
+@slash.slash(name = 'check', description="Check in for a tournament", guild_ids = [835322775098490949])
+async def check(ctx:SlashContext):
+   global r1
+   if type(r1) == discord.role.Role:
+      pass
+   if not type(r1) == discord.role.Role:
+      r1 = discord.utils.get(ctx.guild.roles,name=ROLE)
+   global open_flag
+   mashed = ctx.author.name +'#' +  ctx.author.discriminator
+   mention_ID = '<@{}>'.format(ctx.author_id)
+   if(open_flag): 
+      row = sheet_interface.search(mashed,SEARCH_COLUMN)
+      if not row == None:
+         sheet_interface.add_checkmark(row)
+         await ctx.author.add_roles(r1)
+         team_name = sheet_interface.get_team_name(row)
+         try:
+            #print (team_name, ctx.author.name)
+            await ctx.author.edit(nick=str(nick_shortener(team_name,ctx.author.name)))
+         except:
+            print(nick_shortener(team_name,ctx.author.name))
+         msg = await ctx.send("{} has checked in".format(mention_ID))
+      else:
+         msg = await ctx.send("{} you are not a listed captain".format(mention_ID))
+         return
+   if(not open_flag):
+     msg = await ctx.send("{} Check-ins are not open".format(mention_ID))
+     return
+     
 
 async def channel_check(ctx):
    channel = await conver.TextChannelConverter().convert(ctx,CHANNEL)
@@ -36,8 +115,7 @@ async def channel_check(ctx):
 
 @bot.command(name='check')
 @commands.has_role('Admin')
-async def test(ctx, check_in_time=1,sheet_id=SHEET_ID,*,tournament_name="Asguard 5v5"):
-   print(ctx.channel)
+async def test(ctx, check_in_time=1,sheet_id=SHEET_ID,*,tournament_name="Asgard 5v5"):
    sheet_interface.SAMPLE_SPREADSHEET_ID=sheet_id
    await ctx.message.delete()
    d1 = str(datetime.datetime.now().date())
@@ -61,7 +139,7 @@ async def add(payload):
          await payload.member.add_roles(discord.utils.get(payload.member.guild.roles,name=ROLE))
          team_name = sheet_interface.get_team_name(row)
          try:
-            await payload.member.edit(nick = ("["+team_name+"] "+payload.member.name))
+            await payload.member.edit(nick_shortener(team_name,+payload.member.name))
          except:
             pass
          channel = await bot.fetch_channel(payload.channel_id)
