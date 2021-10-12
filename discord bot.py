@@ -34,6 +34,7 @@ CHANNEL = os.getenv('LISTEN_TO_CHANNEL')
 ROLE = os.getenv('ROLE_TO_GIVE')
 POST_CHANNEL = os.getenv('POST_TO_CHANNEL')
 SHEET_ID = os.getenv('SHEET_ID')
+SHEET_ID = os.getenv('SHEET_ID')
 SHEET_NAME = os.getenv('SHEET_NAME')
 SEARCH_COLUMN = os.getenv('TEAM_CAPTAIN_COLUMN_NAME')
 UPDATE_COLUMN = os.getenv('CHECK_IN_COLUMN_NAME')
@@ -50,7 +51,10 @@ options = [
             manage_commands.create_option(name = "tournament_name",description = "Name of tournament",
                                           option_type = 3, required = "false")
 ]
-
+options2 = [
+            manage_commands.create_option(name = "role",description = "Role to assign",
+                                          option_type = 8, required = "false")
+]
 def nick_shortener(team_name,discord_name):
    nick = "["+team_name+"] "+discord_name
    if(len(nick)>32):
@@ -58,8 +62,9 @@ def nick_shortener(team_name,discord_name):
    
    return nick
 
-@slash.permission(guild_id=835322775098490949,permissions=[create_permission(853752814944518205, SlashCommandPermissionType.ROLE, True)])
-@slash.slash(name= 'start_check', description="Start check-ins for a tournament", guild_ids = [835322775098490949], options=options)
+
+@slash.permission(guild_id=894433155770114119,permissions=[create_permission(894435570103746620, SlashCommandPermissionType.ROLE, True)])
+@slash.slash(name= 'start_check', description="Start check-ins for a tournament", guild_ids = [894433155770114119], options=options)
 async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_name="Asgard 5v5",role=ROLE):
    global r1
    global open_flag
@@ -67,9 +72,9 @@ async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_n
    sheet_interface.SAMPLE_SPREADSHEET_ID=sheet_id
    d1 = str(datetime.datetime.now().date())
    open_flag = True
-   msg = await ctx.send(("@everyone Check ins open for {0} {1} \n"+\
-                        "Check ins close in {2} minutes from this message\n"+\
-                        "Use /check to check-in").format(d1,tournament_name,duration))
+   msg = await ctx.send(("@everyone Check ins open for {0} \n"+\
+                        "Check ins close in {1} minutes from this message\n"+\
+                        "Use /check to check-in").format(tournament_name,duration))
    await asyncio.sleep(duration*60)
    msg = await ctx.send("{0} {1} check ins closed".format(d1,tournament_name))
    open_flag = False
@@ -78,8 +83,7 @@ async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_n
              description="This is just a test command, nothing more.")
 async def test(ctx):
   await ctx.send(content="Hello World!")
-
-@slash.slash(name = 'check', description="Check in for a tournament", guild_ids = [835322775098490949])
+@slash.slash(name = 'check', description="Check in for a tournament", guild_ids = [894433155770114119])
 async def check(ctx:SlashContext):
    global r1
    if type(r1) == discord.role.Role:
@@ -119,7 +123,7 @@ async def test(ctx, check_in_time=1,sheet_id=SHEET_ID,*,tournament_name="Asgard 
    sheet_interface.SAMPLE_SPREADSHEET_ID=sheet_id
    await ctx.message.delete()
    d1 = str(datetime.datetime.now().date())
-   msg = await ctx.send(("@everyone Check ins open for {0} {1} \n"+\
+   msg = await ctx.send((" Check ins open for {0} {1} \n"+\
                         "Check ins close in {2} minutes from this message\n"+\
                         "React with ✅ to check in").format(d1,tournament_name,check_in_time))
    await msg.add_reaction("✅")
@@ -175,7 +179,7 @@ async def on_command_error(ctx,error):
    else:
       await ctx.send(error)
 
-
+print('a')
 bot.run(TOKEN)
-
+print("a")
 

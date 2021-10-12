@@ -10,12 +10,11 @@ from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SERVICE_ACCOUNT_FILE = 'keys.json'
-creds = None
+SERVICE_ACCOUNT_FILE = 'keys2.json'
 creds = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 # The ID and range of a sample spreadsheet.
-SAMPLE_SPREADSHEET_ID = '1Q_FB9htsJazmCO1nP5VFND7DtD8O3Kyto2ObBKa1K4Q'
+SAMPLE_SPREADSHEET_ID = '1AaxaYOMoD7a3ZUe-Ylp1osRenmFx5Qroutkx5aXtgQc'
 def main():
     team_name = "testing"
     discord_name = "123456789123456789"
@@ -39,7 +38,7 @@ class sheet:
     def __init__(self,sheet_ID,sheet_name,search_column,update_column,team_name_column):
         # If modifying these scopes, delete the file token.json.
         self.SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-        self.SERVICE_ACCOUNT_FILE = 'keys.json'
+        self.SERVICE_ACCOUNT_FILE = 'keys2.json'
         self.creds = None
         self.creds = service_account.Credentials.from_service_account_file(
                 self.SERVICE_ACCOUNT_FILE, scopes=self.SCOPES)
@@ -69,6 +68,7 @@ class sheet:
     def add_checkmark(self,row):
         request = self.sheet.values().update(spreadsheetId=self.SAMPLE_SPREADSHEET_ID,
                                             range='{0}!{1}{2}'.format(self.sheet_name,self.update_column,row),valueInputOption='USER_ENTERED',body={'values': [['TRUE']]}).execute()
+        print('{0}!{1}{2}'.format(self.sheet_name,self.update_column,row))
     def remove_checkmark(self,row):
         request = self.sheet.values().update(spreadsheetId=self.SAMPLE_SPREADSHEET_ID,
                                             range='{0}!{1}{2}'.format(self.sheet_name,self.update_column,row),valueInputOption='USER_ENTERED',body={'values': [['FALSE']]}).execute()
@@ -76,6 +76,7 @@ class sheet:
         result = self.sheet.values().get(spreadsheetId=self.SAMPLE_SPREADSHEET_ID,
                                     range='{0}!{1}{2}'.format(self.sheet_name,self.team_name_column,row)).execute()
         values = result.get('values',[])
+        print(values)
         return values[0][0]
 
     def search_column_names(self,search):
