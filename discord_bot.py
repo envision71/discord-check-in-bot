@@ -1,8 +1,4 @@
 import asyncio
-from enum import auto
-from tempfile import TemporaryFile
-from time import process_time_ns
-from weakref import ProxyTypes
 from discord import channel, member
 from discord import guild
 from discord import role
