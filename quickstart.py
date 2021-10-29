@@ -1,5 +1,3 @@
-from __future__ import print_function
-import os.path
 from random import sample
 from time import process_time
 from attr import validate
