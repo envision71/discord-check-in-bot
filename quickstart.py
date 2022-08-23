@@ -36,7 +36,7 @@ class sheet:
     def __init__(self,sheet_ID,sheet_name,search_column,update_column,team_name_column):
         # If modifying these scopes, delete the file token.json.
         self.SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-        self.SERVICE_ACCOUNT_FILE = 'keys2.json'
+        self.SERVICE_ACCOUNT_FILE = 'keys.json'
         self.creds = None
         self.creds = service_account.Credentials.from_service_account_file(
                 self.SERVICE_ACCOUNT_FILE, scopes=self.SCOPES)
