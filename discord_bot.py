@@ -3,8 +3,9 @@ from discord import channel, member
 from discord import guild
 from discord import role
 from discord.ext import commands
-from discord_slash import SlashCommand, SlashCommandOptionType, SlashContext
 import discord
+import discord_slash
+from discord_slash import SlashCommand, SlashCommandOptionType, SlashContext
 import os
 import datetime
 from discord.guild import Guild
@@ -27,7 +28,6 @@ SERVER_NAME= os.getenv('DISCORD_SERVER_NAME')
 CHANNEL = os.getenv('LISTEN_TO_CHANNEL')
 ROLE = os.getenv('ROLE_TO_GIVE')
 POST_CHANNEL = os.getenv('POST_TO_CHANNEL')
-SHEET_ID = os.getenv('SHEET_ID')
 SHEET_ID = os.getenv('SHEET_ID')
 SHEET_NAME = os.getenv('SHEET_NAME')
 SEARCH_COLUMN = os.getenv('TEAM_CAPTAIN_COLUMN_NAME')
@@ -57,9 +57,9 @@ def nick_shortener(team_name,discord_name):
    return nick
 
 
-@slash.permission(guild_id=894433155770114119,permissions=[create_permission(894435570103746620, SlashCommandPermissionType.ROLE, True)])
-@slash.slash(name= 'start_check', description="Start check-ins for a tournament", guild_ids = [894433155770114119], options=options)
-async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_name="Asgard 5v5",role=ROLE):
+#@slash.permission(guild_id=894433155770114119,permissions=[create_permission(894435570103746620, SlashCommandPermissionType.ROLE, True)])
+@slash.slash(name= 'start_check', description="Start check-ins for a tournament", options=options)
+async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_name="Finchmas",role=ROLE):
    global r1
    global open_flag
    r1 = role
@@ -77,7 +77,7 @@ async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_n
              description="This is just a test command, nothing more.")
 async def test(ctx):
   await ctx.send(content="Hello World!")
-@slash.slash(name = 'check', description="Check in for a tournament", guild_ids = [894433155770114119])
+@slash.slash(name = 'check', description="Check in for a tournament")
 async def check(ctx:SlashContext):
    global r1
    if type(r1) == discord.role.Role:
@@ -112,8 +112,7 @@ async def channel_check(ctx):
    return channel == ctx.channel
 
 @bot.command(name='check')
-@commands.has_role('Admin')
-async def test(ctx, check_in_time=1,sheet_id=SHEET_ID,*,tournament_name="Asgard 5v5"):
+async def test(ctx, check_in_time=1,sheet_id=SHEET_ID,*,tournament_name="Finchmas"):
    sheet_interface.SAMPLE_SPREADSHEET_ID=sheet_id
    await ctx.message.delete()
    d1 = str(datetime.datetime.now().date())
@@ -173,7 +172,6 @@ async def on_command_error(ctx,error):
    else:
       await ctx.send(error)
 
-print('a')
 bot.run(TOKEN)
-print("a")
+
 
