@@ -8,7 +8,7 @@ from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SERVICE_ACCOUNT_FILE = 'keys2.json'
+SERVICE_ACCOUNT_FILE = 'keys.json'
 creds = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 # The ID and range of a sample spreadsheet.
