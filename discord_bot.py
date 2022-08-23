@@ -16,6 +16,9 @@ from discord_slash.utils.manage_commands import create_option, create_permission
 from quickstart import sheet
 from discord.ext.commands.errors import MissingRole
 from discord.raw_models import RawReactionActionEvent
+from dotenv import load_dotenv
+load_dotenv()
+
 
 open_flag = False
 r1 = None
