@@ -4,7 +4,6 @@ from discord import guild
 from discord import role
 from discord.ext import commands
 import discord
-import discord_slash
 from discord_slash import SlashCommand, SlashCommandOptionType, SlashContext
 import os
 import datetime
@@ -36,6 +35,8 @@ SHEET_NAME = os.getenv('SHEET_NAME')
 SEARCH_COLUMN = os.getenv('TEAM_CAPTAIN_COLUMN_NAME')
 UPDATE_COLUMN = os.getenv('CHECK_IN_COLUMN_NAME')
 TEAM_NAME_COLUMN = os.getenv('TEAM_NAME_COLUMN_NAME')
+ROLE_TO_PING = None
+ROLER=None
 TRACKID = []
 sheet_interface = sheet(SHEET_ID,SHEET_NAME,SEARCH_COLUMN,UPDATE_COLUMN,TEAM_NAME_COLUMN)
 options = [
@@ -46,10 +47,12 @@ options = [
             manage_commands.create_option(name = "sheet_id",description = "Google sheets ID to search for check-ins.",
                                           option_type = 3, required = "false"),
             manage_commands.create_option(name = "tournament_name",description = "Name of tournament",
-                                          option_type = 3, required = "false")
+                                          option_type = 3, required = "false"),
+            manage_commands.create_option(name = "role_to_ping",description = "Role to ping",
+                                          option_type = 8, required = "false")
 ]
 options2 = [
-            manage_commands.create_option(name = "role",description = "Role to assign",
+            manage_commands.create_option(name = "roler",description = "Role to assign",
                                           option_type = 8, required = "false")
 ]
 def nick_shortener(team_name,discord_name):
@@ -60,26 +63,32 @@ def nick_shortener(team_name,discord_name):
    return nick
 
 
-#@slash.permission(guild_id=894433155770114119,permissions=[create_permission(894435570103746620, SlashCommandPermissionType.ROLE, True)])
 @slash.slash(name= 'start_check', description="Start check-ins for a tournament", options=options)
-async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_name="Finchmas",role=ROLE):
+async def start_check(ctx:SlashContext,duration=1,sheet_id=SHEET_ID,tournament_name="Finchmas",role=ROLE,role_to_ping=ROLE_TO_PING):
    global r1
    global open_flag
-   r1 = role
    sheet_interface.SAMPLE_SPREADSHEET_ID=sheet_id
    d1 = str(datetime.datetime.now().date())
    open_flag = True
-   msg = await ctx.send(("@everyone Check ins open for {0} \n"+\
-                        "Check ins close in {1} minutes from this message\n"+\
-                        "Use /check to check-in").format(tournament_name,duration))
+   if role_to_ping != None:
+      msg = await ctx.send(("<@&{0}> Check ins open for {1} \n"+\
+                           "Check ins close in {2} minutes from this message\n"+\
+                           "Use /check to check-in").format(role_to_ping.id,tournament_name,duration),allowed_mentions=discord.AllowedMentions(roles=True))
+   elif role_to_ping == None:
+      msg = await ctx.send(("Check ins open for {0} \n"+\
+                           "Check ins close in {1} minutes from this message\n"+\
+                           "Use /check to check-in").format(tournament_name,duration)) 
    await asyncio.sleep(duration*60)
    msg = await ctx.send("{0} {1} check ins closed".format(d1,tournament_name))
    open_flag = False
 
-@slash.slash(name="test",
-             description="This is just a test command, nothing more.")
-async def test(ctx):
-  await ctx.send(content="Hello World!")
+
+@slash.slash(name="test",description="This is just a test command, nothing more.",options=options2)
+async def test(ctx:SlashContext,roler=ROLER):
+   print(roler.mentionable)
+   await ctx.send(content="Hello World! <@&{0}>".format(roler.id),allowed_mentions=discord.AllowedMentions(roles=True))
+
+
 @slash.slash(name = 'check', description="Check in for a tournament")
 async def check(ctx:SlashContext):
    global r1
@@ -109,61 +118,6 @@ async def check(ctx:SlashContext):
      msg = await ctx.send("{} Check-ins are not open".format(mention_ID))
      return
      
-
-async def channel_check(ctx):
-   channel = await conver.TextChannelConverter().convert(ctx,CHANNEL)
-   return channel == ctx.channel
-
-@bot.command(name='check')
-async def test(ctx, check_in_time=1,sheet_id=SHEET_ID,*,tournament_name="Finchmas"):
-   sheet_interface.SAMPLE_SPREADSHEET_ID=sheet_id
-   await ctx.message.delete()
-   d1 = str(datetime.datetime.now().date())
-   msg = await ctx.send((" Check ins open for {0} {1} \n"+\
-                        "Check ins close in {2} minutes from this message\n"+\
-                        "React with ✅ to check in").format(d1,tournament_name,check_in_time))
-   await msg.add_reaction("✅")
-   TRACKID.append(msg.id)
-   await asyncio.sleep(check_in_time*60)
-   await msg.delete()
-   msg = await ctx.send("{0} {1} check ins closed".format(d1,tournament_name))
-
-   
-async def add(payload):
-   if payload.message_id in TRACKID:
-      discord_ID = payload.member.name +'#' + payload.member.discriminator
-      mention_ID = '<@{}>'.format(payload.user_id)
-      row = sheet_interface.search(discord_ID)
-      if not row == None:
-         sheet_interface.add_checkmark(row)
-         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles,name=ROLE))
-         team_name = sheet_interface.get_team_name(row)
-         try:
-            await payload.member.edit(nick_shortener(team_name,+payload.member.name))
-         except:
-            pass
-         channel = await bot.fetch_channel(payload.channel_id)
-         msg = await channel.send("{} has checked in".format(mention_ID))
-
-         
-async def remove(payload):
-   if payload.message_id in TRACKID:
-      discord_ID = await bot.fetch_user(payload.user_id)
-      row = sheet_interface.search(str(discord_ID))
-      if not row == None:
-         sheet_interface.remove_checkmark(row)
-         guild = await bot.fetch_guild(payload.guild_id)
-         member_id = await guild.fetch_member(payload.user_id)
-         await member_id.remove_roles(discord.utils.get(guild.roles,name=ROLE))
-         try:
-            await member_id.edit(nick = (member_id.name))
-         except:
-            pass
-         channel = await bot.fetch_channel(payload.channel_id)
-         tag = '<@{}>'.format(payload.user_id)
-         msg = await channel.send('{} has un-check in'.format(tag))
-bot.add_listener(add, 'on_raw_reaction_add')
-bot.add_listener(remove, 'on_raw_reaction_remove')
 
 
 @bot.event
