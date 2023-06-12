@@ -97,7 +97,7 @@ async def check(ctx:SlashContext):
    if not type(r1) == discord.role.Role:
       r1 = discord.utils.get(ctx.guild.roles,name=ROLE)
    global open_flag
-   mashed = ctx.author.name +'#' +  ctx.author.discriminator
+   mashed = ctx.author.name
    mention_ID = '<@{}>'.format(ctx.author_id)
    if(open_flag): 
       row = sheet_interface.search(mashed,SEARCH_COLUMN)
